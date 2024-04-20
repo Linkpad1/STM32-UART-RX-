@@ -22,7 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-sensor_status_handle_TypeDef sensor_handle = { 0,0,0,0,0,0,0,0,0,0,0 };
+sensor_status_handle_TypeDef sensor_handle = { 0,0,0,0,0,0,0,0,0,0 };
 
 
 void removeChar(char *str, char garbage) {
