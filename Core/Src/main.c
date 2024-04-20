@@ -193,7 +193,7 @@ void RXdata(void)
 }
 
 
-void SPDstatus (void)
+void SensorStatus (void)
 {
 	if(Timer2Int ==1)
 	{
@@ -201,61 +201,61 @@ void SPDstatus (void)
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V1spdN: %d \n", sensor_handle.Sensor1);
+    sprintf(buffer1, "Sensor 1: %d \n", sensor_handle.Sensor1);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V2spdN: %d \n", sensor_handle.Sensor2);
+    sprintf(buffer1, "Sensor 2: %d \n", sensor_handle.Sensor2);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V3spdN: %d \n", sensor_handle.Sensor3);
+    sprintf(buffer1, "Sensor 3: %d \n", sensor_handle.Sensor3);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V1spdE: %d \n", sensor_handle.Sensor4);
+    sprintf(buffer1, "Sensor 4: %d \n", sensor_handle.Sensor4);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V2spdE: %d \n", sensor_handle.Sensor5);
+    sprintf(buffer1, "Sensor 5: %d \n", sensor_handle.Sensor5);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V2spdE: %d \n", sensor_handle.Sensor6);
+    sprintf(buffer1, "Sensor 6: %d \n", sensor_handle.Sensor6);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "NE1spd: %d \n", sensor_handle.Sensor7);
+    sprintf(buffer1, "Sensor 7: %d \n", sensor_handle.Sensor7);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V1volt: %d \n", sensor_handle.Sensor8);
+    sprintf(buffer1, "Sensor 8: %d \n", sensor_handle.Sensor8);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V2volt: %d \n", sensor_handle.Sensor9);
+    sprintf(buffer1, "Sensor 9: %d \n", sensor_handle.Sensor9);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 
 	{
 	char buffer1[16] = {0};
-    sprintf(buffer1, "V3volt: %d \n", sensor_handle.Sensor10);
+    sprintf(buffer1, "Sensor 10: %d \n", sensor_handle.Sensor10);
     HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
 	}
 	}
@@ -356,7 +356,7 @@ int main(void)
 
 	 // HAL_UART_Transmit(&huart2, "test", sizeof"test",100);
 	 RXdata();
-	 SPDstatus();
+	 SensorStatus();
 	 ErrorHandler();
 
       // UART Print SPD status
