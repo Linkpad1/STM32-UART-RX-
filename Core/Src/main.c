@@ -21,10 +21,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdbool.h>
+#include <stdio.h>
+
 
 sensor_status_handle_TypeDef sensor_handle = { 0,0,0,0,0,0,0,0,0,0 };
 
-
+// Remove Key Characters from received bytes leaving just raw Data.
 void removeChar(char *str, char garbage) {
 
     char *src, *dst;
@@ -33,6 +36,25 @@ void removeChar(char *str, char garbage) {
         if (*dst != garbage) dst++;
     }
     *dst = '\0';
+}
+
+void removeString (char text[], int index, int rm_length)
+{
+    int i;
+
+    for ( i = 0; i < index; ++i )
+        if ( text[i] == '\0' )
+            return;
+
+    for ( ; i < index + rm_length; ++i )
+        if ( text[i] == '\0' ) {
+            text[index] = '\0';
+            return;
+        }
+
+    do {
+        text[i - rm_length] = text[i];
+    } while ( text[i++] != '\0' );
 }
 /* USER CODE END Includes */
 
@@ -54,6 +76,7 @@ __IO ITStatus UartReady = RESET;
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
@@ -71,49 +94,45 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
 
 
 char buffer[11] = {0};
 uint8_t reception_complete = 0;
+bool Rx1 = false;
+bool Rx2 = false;
+bool Rx3 = false;
+bool Rx4 = false;
+bool Rx5 = false;
+bool Rx6 = false;
+bool Rx7 = false;
+bool Rx8 = false;
+bool Rx9 = false;
+bool Rx10 = false;
 
 //Timers
 uint8_t Timer2Int = 0; // 1 second timer
 uint8_t Timer3Int = 0; // 10 second timer
+uint16_t Timer10 = 0; // 1 Second Timeout Timer
 uint16_t RXcount = 0; // RX packet count
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void removeString (char text[], int index, int rm_length)
-{
-    int i;
 
-    for ( i = 0; i < index; ++i )
-        if ( text[i] == '\0' )
-            return;
-
-    for ( ; i < index + rm_length; ++i )
-        if ( text[i] == '\0' ) {
-            text[index] = '\0';
-            return;
-        }
-
-    do {
-        text[i - rm_length] = text[i];
-    } while ( text[i++] != '\0' );
-}
 
 
 void RXdata(void)
 {
-	if(reception_complete ==1 )
+	if((reception_complete == 1) && (Timer10 < 500 ))
 	{
 	 // Sensor 1
 	 if (strncmp(buffer, "SENS01", 6) == 0)
 		  {
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor1= atoi(buffer);
+		  Rx1 = true;
 		  }
 
 	 // Sensor 2
@@ -122,6 +141,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor2= atoi(buffer);
+		  Rx2 = true;
 	     }
 
 	 // Sensor 3
@@ -130,6 +150,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor3= atoi(buffer);
+		  Rx3 = true;
 	     }
 
 	 // Sensor 4
@@ -138,6 +159,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor4= atoi(buffer);
+		  Rx4 = true;
 	     }
 
 	 // Sensor 5
@@ -146,6 +168,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor5= atoi(buffer);
+		  Rx5 = true;
 	     }
 
 	 // Sensor 6
@@ -154,6 +177,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor6= atoi(buffer);
+		  Rx6 = true;
 	     }
 
 	 // Sensor 7
@@ -162,6 +186,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor7= atoi(buffer);
+		  Rx7 = true;
 	     }
 
 	 // Sensor 8
@@ -170,6 +195,7 @@ void RXdata(void)
 		  // Subtract the 6 start chars from string
 		  removeString (buffer, 0, 6);
 		  sensor_handle.Sensor8= atoi(buffer);
+		  Rx8 = true;
 	     }
 
 	 // Sensor 9
@@ -178,6 +204,7 @@ void RXdata(void)
 		 // Subtract the 6 start chars from string
 		 removeString (buffer, 0, 6);
 		 sensor_handle.Sensor9= atoi(buffer);
+		 Rx9 = true;
 		 }
 
 	// Sensor 10
@@ -186,8 +213,29 @@ void RXdata(void)
 		 // Subtract the 6 start chars from string
 		 removeString (buffer, 0, 6);
 		 sensor_handle.Sensor10= atoi(buffer);
+		 Rx10 = true;
 		 }
-
+	// if all packets receive have failed reset the UART irq
+	if ((Rx1==0) & (Rx2==0) & (Rx3==0) & (Rx4==0) & (Rx5==0) && (Rx6==0) && (Rx7==0) && (Rx8==0) && (Rx9==0) && (Rx10==0))
+	{
+	HAL_UART_Transmit_IT(&huart2,  "Missed RX", sizeof"Missed RX");
+	HAL_Delay(1);
+	__disable_irq();
+	HAL_UART_AbortReceive_IT(&huart3);
+	huart3.RxState =  HAL_UART_STATE_READY;
+	__enable_irq();
+	}
+	// reset RX packet flags
+	 Rx1 = false;
+	 Rx2 = false;
+	 Rx3 = false;
+	 Rx4 = false;
+	 Rx5 = false;
+	 Rx6 = false;
+	 Rx7 = false;
+	 Rx8 = false;
+	 Rx9 = false;
+	 Rx10 = false;
 	}
  reception_complete = 0;
 }
@@ -197,75 +245,21 @@ void SensorStatus (void)
 {
 	if(Timer2Int ==1)
 	{
-
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 1: %d \n", sensor_handle.Sensor1);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
+		{
+		char buffer1[200] = {0};
+		snprintf(buffer1, sizeof(buffer1), "S1 %d \n, S2 %d \n, S3 %d \n, S4 %d \n, S5 %d \n, S6 %d \n, S7 %d \n, S8 %d \n, S9 %d \n, S10 %d \n", sensor_handle.Sensor1,sensor_handle.Sensor2,sensor_handle.Sensor3,sensor_handle.Sensor4,sensor_handle.Sensor5,sensor_handle.Sensor6,sensor_handle.Sensor7,sensor_handle.Sensor8,sensor_handle.Sensor9,sensor_handle.Sensor10);
+	    HAL_UART_Transmit_IT(&huart2,  buffer1, strlen(buffer1));
 	}
 
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 2: %d \n", sensor_handle.Sensor2);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
+	Timer2Int = 0;
 	}
 
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 3: %d \n", sensor_handle.Sensor3);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 4: %d \n", sensor_handle.Sensor4);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 5: %d \n", sensor_handle.Sensor5);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 6: %d \n", sensor_handle.Sensor6);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 7: %d \n", sensor_handle.Sensor7);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 8: %d \n", sensor_handle.Sensor8);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 9: %d \n", sensor_handle.Sensor9);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-
-	{
-	char buffer1[16] = {0};
-    sprintf(buffer1, "Sensor 10: %d \n", sensor_handle.Sensor10);
-    HAL_UART_Transmit(&huart2,  buffer1, strlen(buffer1), 100);
-	}
-	}
 }
 
 void ErrorHandler(void)
 {
-	if(Timer3Int == 1)
-	{
-	if(RXcount==0) // No RX Packets received
+	Timer10 = __HAL_TIM_GET_COUNTER(&htim10);
+	if (Timer10 > 500)
 	{
 		HAL_UART_Transmit(&huart2,  "No Connection", sizeof"No Connection", 100);
 		sensor_handle.Sensor1 = 0;
@@ -278,15 +272,6 @@ void ErrorHandler(void)
 		sensor_handle.Sensor8 = 0;
 		sensor_handle.Sensor9 = 0;
 		sensor_handle.Sensor10 = 0;
-
-
-
-	}
-	if(RXcount>0) // RX Packets received
-	{
-	RXcount=0;
-	}
-	Timer3Int = 0;
 	}
 
 }
@@ -329,8 +314,11 @@ int main(void)
   MX_TIM3_Init();
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UART_Receive_DMA(&huart3, &buffer, 11);
+	 HAL_TIM_Base_Start_IT(&htim2); // start 1 second timer
+	 HAL_TIM_Base_Start_IT(&htim3); // start 10 second timer
 
 
 
@@ -343,24 +331,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
- 	 HAL_TIM_Base_Start_IT(&htim2); // start 1 second timer
- 	 HAL_TIM_Base_Start_IT(&htim3); // start 10 second timer
+	   HAL_TIM_Base_Start(&htim10); // start 10 second timer
+	   HAL_UART_Receive_DMA(&huart3, &buffer, 11);
 
- 	 HAL_UART_Receive_DMA(&huart3, &buffer, 11);
-
-	  /*##-4- Wait for the end of the transfer ###################################*/
-	  //while (UartReady != SET)
-	  //{
-	  //}
+	   // UART Print RX Status
+	   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 
 
-	 // HAL_UART_Transmit(&huart2, "test", sizeof"test",100);
 	 RXdata();
 	 SensorStatus();
 	 ErrorHandler();
 
-      // UART Print SPD status
-	 HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+	 // reset UART flag
 	 UartReady = RESET;
   }
   /* USER CODE END 3 */
@@ -498,6 +480,37 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 16000;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 1001-1;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -615,15 +628,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   //if(huart->Instance == huart2.Instance)
   //{
+  HAL_UART_Receive_DMA(&huart3, &buffer, 11);
+  HAL_UART_Transmit_IT(&huart2,  &buffer, 11);
 
-  HAL_UART_Transmit(&huart2,  &buffer, 11, 100);
-  //HAL_UART_Receive_IT(&huart2,  &buffer, 11);
  /* Set transmission flag: trasfer complete*/
   reception_complete = 1;
   RXcount++;
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
   /* Set transmission flag: trasfer complete*/
   UartReady = SET;
+
+  TIM10->CNT &= 0x0; // restart the RX Timeout Counter [0.5S]
  // }
 }
 
